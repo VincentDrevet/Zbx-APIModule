@@ -6,9 +6,9 @@ using System.Text;
 namespace Zbx_APIModule;
 
 [Cmdlet("Connect", "Zabbix")]
-public class ConnectZabbixCmdlet : PSCmdlet
+public class ConnectZabbixCmdlet : PSCmdlet, IZabbixCmdlet
 {
-    private readonly HttpClient _client = new HttpClient();
+    private readonly HttpClient _client = ZabbixApiUtils.InitHttpClient(Constants.HttpTimeout);
 
     [Parameter(Mandatory = true)]
     public String ZabbixServer { get; set; }
@@ -22,7 +22,10 @@ public class ConnectZabbixCmdlet : PSCmdlet
         parameters.Add("user", Credential.UserName);
         parameters.Add("password", Credential.GetNetworkCredential().Password);
         
-        var result = ZabbixApiUtils.SendRequest(ZabbixServer, parameters, "user.login", _client);
+        var result = ZabbixApiUtils.SendRequest(ZabbixServer, new ZabbixRequest {
+            Method = "user.login",
+            Params = parameters
+        }, _client);
 
         if(result.Error != null) {
             throw new ZabbixApiAuthenticationException(result.Error);
@@ -30,6 +33,7 @@ public class ConnectZabbixCmdlet : PSCmdlet
 
         WriteDebug(result.ToString());
 
-        SessionState.PSVariable.Set(new PSVariable("apikey", result.Result, ScopedItemOptions.Private));
+        SessionState.PSVariable.Set(new PSVariable(Constants.ZabbixServerKeyNameVariable, ZabbixServer, ScopedItemOptions.Private));
+        SessionState.PSVariable.Set(new PSVariable(Constants.TokenKeyNameVariable, result.Result, ScopedItemOptions.Private));
     }
 }

@@ -3,12 +3,9 @@ using System.Text;
 using System.Text.Json;
 class ZabbixApiUtils
 {
-    public static ZAbbixResponse SendRequest(String ZabbixServer, Hashtable parameters, String method, HttpClient _client) {
+    public static ZAbbixResponse SendRequest(String ZabbixServer, ZabbixRequest request, HttpClient _client) {
 
-        var payload = JsonSerializer.Serialize(new ZabbixRequest {
-            Params = parameters,
-            Method = method
-        });
+        var payload = JsonSerializer.Serialize(request);
 
         var response = _client.PostAsync(ZabbixServer, new StringContent(payload, Encoding.UTF8, "application/json")).Result;
 
@@ -18,5 +15,13 @@ class ZabbixApiUtils
 
         return result;
 
+    }
+
+    public static HttpClient InitHttpClient(TimeSpan timeout) {
+        var client = new HttpClient();
+
+        client.Timeout = timeout;
+
+        return client;
     }
 }
